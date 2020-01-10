@@ -1,3 +1,6 @@
+# build is throwing away all the manual Requires?
+AutoReqProv: no
+
 # Define this to link to which library version  eg. /lib64/ld-lsb-x86-64.so.3
 %define lsbsover 3 
 
@@ -49,7 +52,7 @@
 Summary: LSB base libraries support for Red Hat Enterprise Linux
 Name: redhat-lsb
 Version: 4.0
-Release: 2.1%{?dist}
+Release: 3%{?dist}
 URL: http://www.linuxfoundation.org/collaborate/workgroups/lsb
 Source0: %{name}-%{version}-%{srcrelease}.tar.bz2
 #Source1: http://prdownloads.sourceforge.net/lsb/lsb-release-%{upstreamlsbrelver}.tar.gz
@@ -86,6 +89,9 @@ Provides: lsb = %{version}
 %endif
 Provides: lsb-core-%{archname} = %{version}
 Provides: lsb-core-noarch = %{version}
+
+# split is great in theory, but "lsb" requires it all, for now
+Requires: redhat-lsb-graphics redhat-lsb-printing
 
 ExclusiveArch: %{ix86} ia64 x86_64 ppc ppc64 s390 s390x
 
@@ -338,6 +344,14 @@ Requires: /usr/sbin/useradd
 Requires: /usr/sbin/userdel
 Requires: /usr/sbin/usermod
 
+# required perl modules from other packages - could change with further splits
+# alternately one could list each required perl module like perl(Test::Harness)
+# see http://refspecs.freestandards.org/LSB_4.0.0/LSB-Languages/LSB-Languages/perlymodules.html
+Requires: perl-CGI
+Requires: perl-Test-Simple
+Requires: perl-Test-Harness
+Requires: perl-ExtUtils-MakeMaker
+
 %description
 The Linux Standard Base (LSB) is an attempt to develop a set of
 standards that will increase compatibility among Linux distributions.
@@ -352,10 +366,6 @@ Summary: LSB graphics libraries support for Red Hat Enterprise Linux
 
 Provides: lsb-graphics-%{archname} = %{version}
 Provides: lsb-graphics-noarch = %{version}
-
-%description graphics
-The Linux Standard Base (LSB) Graphics Specifications define components that are required
- to be present on an LSB conforming system.
 
 %ifarch %{ix86}
 # archLSB IA32 Graphics Libraries
@@ -582,7 +592,9 @@ Requires: /usr/bin/fc-cache
 Requires: /usr/bin/fc-list
 Requires: /usr/bin/fc-match
 
-
+%description graphics
+The Linux Standard Base (LSB) Graphics Specifications define components that are required
+ to be present on an LSB conforming system.
 
 %package printing
 Group: System Environment/Base
@@ -590,10 +602,6 @@ Summary: LSB printing libraries support for Red Hat Enterprise Linux
 
 Provides: lsb-printing-%{archname} = %{version}
 Provides: lsb-printing-noarch = %{version}
-
-%description printing
-The Linux Standard Base (LSB) Printing Specifications define components that are required
- to be present on an LSB conforming system.
 
 # gLSB Printing Libraries
 Requires: libcups.so.2%{qual}
@@ -605,6 +613,9 @@ Requires: /usr/bin/gs
 Requires: /usr/bin/lp
 Requires: /usr/bin/lpr
 
+%description printing
+The Linux Standard Base (LSB) Printing Specifications define components that are required
+ to be present on an LSB conforming system.
 
 %prep
 %setup -q
@@ -738,6 +749,10 @@ fi
 
 
 %changelog
+* Sat Nov 6 2010 Lawrence Lim <llim@redhat.com> - 4.0-3
+- apply redhat-lsb.spec.diff-stewb <Stew Benedict - stewb@linuxfoundation.org>
+- Resolved: Bug 585947
+
 * Fri Jan 15 2010 Lawrence Lim <llim@redhat.com> - 4.0-2.1
 - Resolves: Bug 506540
 
