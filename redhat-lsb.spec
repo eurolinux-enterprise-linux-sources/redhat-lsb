@@ -52,7 +52,7 @@ AutoReqProv: no
 Summary: LSB base libraries support for Red Hat Enterprise Linux
 Name: redhat-lsb
 Version: 4.0
-Release: 3%{?dist}
+Release: 7%{?dist}
 URL: http://www.linuxfoundation.org/collaborate/workgroups/lsb
 Source0: %{name}-%{version}-%{srcrelease}.tar.bz2
 #Source1: http://prdownloads.sourceforge.net/lsb/lsb-release-%{upstreamlsbrelver}.tar.gz
@@ -87,13 +87,43 @@ Provides: lsb = %{version}
 %ifarch x86_64
 %define archname amd64
 %endif
-Provides: lsb-core-%{archname} = %{version}
-Provides: lsb-core-noarch = %{version}
+Provides: lsb-%{archname} = %{version}
+Provides: lsb-noarch = %{version}
 
 # split is great in theory, but "lsb" requires it all, for now
-Requires: redhat-lsb-graphics redhat-lsb-printing
+Requires: redhat-lsb-core%{?_isa} = %{version}-%{release}
+Requires: redhat-lsb-graphics%{?_isa} = %{version}-%{release}
+Requires: redhat-lsb-printing%{_isa} = %{version}-%{release}
+Requires: redhat-lsb-compat%{?_isa} = %{version}-%{release}
 
 ExclusiveArch: %{ix86} ia64 x86_64 ppc ppc64 s390 s390x
+
+%description
+The Linux Standard Base (LSB) is an attempt to develop a set of
+standards that will increase compatibility among Linux distributions.
+The redhat-lsb package provides utilities needed for LSB Compliant
+Applications.  It also contains requirements that will ensure that all
+components required by the LSB that are provided by Red Hat Enterprise Linux
+are installed on the system.
+
+%package compat
+Group: System Environment/Base
+Summary: LSB package split dependency compat helper
+
+Obsoletes: redhat-lsb%{?_isa} < 4.0-7
+Requires: redhat-lsb%{?_isa} = %{version}-%{release}
+
+%description compat
+This package only exists to help transition redhat-lsb users to the new
+package split. Without this subpackage, it will not be possible to do clean
+updates from old redhat-lsb package set.
+
+%package core
+Group: System Environment/Base
+Summary: LSB base libraries support for Red Hat Enterprise Linux
+
+Provides: lsb-core-%{archname} = %{version}
+Provides: lsb-core-noarch = %{version}
 
 %ifarch %{ix86}
 # archLSB IA32 Base Libraries
@@ -351,14 +381,14 @@ Requires: perl-CGI
 Requires: perl-Test-Simple
 Requires: perl-Test-Harness
 Requires: perl-ExtUtils-MakeMaker
+#we need to update /etc/lsb-release file
+Requires(post): gawk
 
-%description
-The Linux Standard Base (LSB) is an attempt to develop a set of
-standards that will increase compatibility among Linux distributions.
-The redhat-lsb package provides utilities needed for LSB Compliant
-Applications.  It also contains requirements that will ensure that all
-components required by the LSB that are provided by Red Hat Linux are
-installed on the system.
+%description core
+The Linux Standard Base (LSB) Core Libraries Specifications define components
+that are required to be present on an LSB conforming system.
+
+
 
 %package graphics
 Group: System Environment/Base
@@ -366,6 +396,12 @@ Summary: LSB graphics libraries support for Red Hat Enterprise Linux
 
 Provides: lsb-graphics-%{archname} = %{version}
 Provides: lsb-graphics-noarch = %{version}
+
+Requires: redhat-lsb-core%{?_isa} = %{version}
+#we need to update /etc/lsb-release file
+Requires(post): gawk
+Requires(postun): gawk
+
 
 %ifarch %{ix86}
 # archLSB IA32 Graphics Libraries
@@ -593,8 +629,8 @@ Requires: /usr/bin/fc-list
 Requires: /usr/bin/fc-match
 
 %description graphics
-The Linux Standard Base (LSB) Graphics Specifications define components that are required
- to be present on an LSB conforming system.
+The Linux Standard Base (LSB) Graphics Specifications define components
+that are required to be present on an LSB conforming system.
 
 %package printing
 Group: System Environment/Base
@@ -602,6 +638,12 @@ Summary: LSB printing libraries support for Red Hat Enterprise Linux
 
 Provides: lsb-printing-%{archname} = %{version}
 Provides: lsb-printing-noarch = %{version}
+
+Requires: redhat-lsb-core%{?_isa} = %{version}
+
+#we need to update /etc/lsb-release file
+Requires(post): gawk
+Requires(postun): gawk
 
 # gLSB Printing Libraries
 Requires: libcups.so.2%{qual}
@@ -614,14 +656,15 @@ Requires: /usr/bin/lp
 Requires: /usr/bin/lpr
 
 %description printing
-The Linux Standard Base (LSB) Printing Specifications define components that are required
- to be present on an LSB conforming system.
+The Linux Standard Base (LSB) Printing Specifications define components
+that are required to be present on an LSB conforming system.
 
 %prep
 %setup -q
 %patch0 -p1
 %patch1 -p1
 %patch2 -p0 -b .triggerfix
+
 
 %build
 cd lsb-release-%{upstreamlsbrelver}
@@ -632,7 +675,7 @@ make
 if [ -e /bin/mailx ]; then
    if [ -L /bin/mailx ]; then
      rm -f /bin/mailx
-   fi 
+   fi
 fi
 
 
@@ -648,6 +691,8 @@ make mandir=$RPM_BUILD_ROOT/%{_mandir} prefix=$RPM_BUILD_ROOT/%{_prefix} install
 cd ..
 touch $RPM_BUILD_ROOT/etc/lsb-release.d/core-4.0-%{archname}
 touch $RPM_BUILD_ROOT/etc/lsb-release.d/core-4.0-noarch
+touch $RPM_BUILD_ROOT/etc/lsb-release.d/base-4.0-%{archname}
+touch $RPM_BUILD_ROOT/etc/lsb-release.d/base-4.0-noarch
 touch $RPM_BUILD_ROOT/etc/lsb-release.d/graphics-4.0-%{archname}
 touch $RPM_BUILD_ROOT/etc/lsb-release.d/graphics-4.0-noarch
 touch $RPM_BUILD_ROOT/etc/lsb-release.d/printing-4.0-%{archname}
@@ -676,6 +721,9 @@ mkdir -p $RPM_BUILD_ROOT/bin
 ln -snf ../../../sbin/chkconfig $RPM_BUILD_ROOT/usr/lib/lsb/install_initd
 ln -snf ../../../sbin/chkconfig $RPM_BUILD_ROOT/usr/lib/lsb/remove_initd
 #ln -snf mail $RPM_BUILD_ROOT/bin/mailx
+
+#file will be generated in posttrans of -core to resolve real situation on the system
+touch $RPM_BUILD_ROOT%{_sysconfdir}/lsb-release
 
 #mkdir -p $RPM_BUILD_ROOT/usr/X11R6/lib/X11/xserver
 #ln -snf /usr/%{_lib}/xserver/SecurityPolicy $RPM_BUILD_ROOT/usr/X11R6/lib/X11/xserver/SecurityPolicy
@@ -723,13 +771,44 @@ fi
   fi
 %endif
 
+%post graphics
+echo "LSB_VERSION=`lsb_release -v | awk '/Version/ {print substr($3,2)}'`" >%{_sysconfdir}/lsb-release
+
+%postun graphics
+echo "LSB_VERSION=`lsb_release -v | awk '/Version/ {print substr($3,2)}'`" >%{_sysconfdir}/lsb-release
+
+%post printing
+echo "LSB_VERSION=`lsb_release -v | awk '/Version/ {print substr($3,2)}'`" >%{_sysconfdir}/lsb-release
+
+%postun printing
+echo "LSB_VERSION=`lsb_release -v | awk '/Version/ {print substr($3,2)}'`" >%{_sysconfdir}/lsb-release
+
+%post core
+echo "LSB_VERSION=`lsb_release -v | awk '/Version/ {print substr($3,2)}'`" >%{_sysconfdir}/lsb-release
+
+%postun core
+echo "LSB_VERSION=`lsb_release -v | awk '/Version/ {print substr($3,2)}'`" >%{_sysconfdir}/lsb-release
+if [ $1 -eq 0 ] ; then
+  #uninstalling, lsb-core compliance package no longer available on system
+  rm %{_sysconfdir}/lsb-release
+fi
+
 %files
+#We need the files in core subpackage
+
+%files compat
+#no files in compat, just dependency helper
+
+%files core
 %defattr(-,root,root)
+%{_sysconfdir}/lsb-release.d/core*
+%{_sysconfdir}/lsb-release.d/base*
 %{_sysconfdir}/redhat-lsb
+#file is generated by the scriptlets to be always up2date
+%ghost %config %{_sysconfdir}/lsb-release
 %dir %{_sysconfdir}/lsb-release.d
-# These files are needed because they shows which LSB we're supporting now, 
+# These files are needed because they shows which LSB we're supporting now,
 # for example, if core-3.1-noarch exists, it means we are supporting LSB3.1 now
-%{_sysconfdir}/lsb-release.d/*
 %{_mandir}/*/*
 %{_bindir}/*
 #/bin/mailx
@@ -749,6 +828,23 @@ fi
 
 
 %changelog
+* Wed Dec 05 2012 Ondrej Vasik <ovasik@redhat.com> - 4.0-7
+- new compat subpackage to resolve conflicts because of
+  1:N package -core split (related #709016)
+
+* Wed Nov 21 2012 Ondrej Vasik <ovasik@redhat.com> - 4.0-6
+- fix the split-core stuff to allow benefits from it, use
+  versioned/arched requirements for the subpackages
+- file /etc/lsb-release should be present on the system
+- Resolves: Bug 833058
+
+* Tue Nov 6 2012 Lawrence Lim <llim@redhat.com> - 4.0-5
+- Resolves: Bug 835919
+
+* Fri Oct 12 2012 Lawrence Lim <llim@redhat.com> - 4.0-4
+- merge redhat-lsb-split-core.patch
+- Resolves: Bug 801158, Bug 709016, Bug 844602
+
 * Sat Nov 6 2010 Lawrence Lim <llim@redhat.com> - 4.0-3
 - apply redhat-lsb.spec.diff-stewb <Stew Benedict - stewb@linuxfoundation.org>
 - Resolved: Bug 585947
