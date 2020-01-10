@@ -1,0 +1,28 @@
+#!/bin/sh
+
+# LSB initscript functions, as defined in the LSB Spec 1.1.0
+
+start_daemon () {
+	/etc/redhat-lsb/lsb_start_daemon "$@"
+}
+
+killproc () {
+	/etc/redhat-lsb/lsb_killproc "$@"
+}
+
+pidofprof () {
+	/etc/redhat-lsb/lsb_pidofproc "$@"
+}
+
+log_success_msg () {
+	/etc/redhat-lsb/lsb_log_message success "$@"
+}
+
+log_failure_msg () {
+	/etc/redhat-lsb/lsb_log_message failure "$@"
+}
+
+log_warning_message () {
+	/etc/redhat-lsb/lsb_log_message warning "$@"
+}
+

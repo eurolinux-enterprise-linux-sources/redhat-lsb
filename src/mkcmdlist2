@@ -1,0 +1,61 @@
+#!/usr/bin/perl
+
+# Source originally from lsb-cmdchk
+# Creating a list of commands required by LSB
+
+use DBI;
+use Getopt::Long;
+use Env qw(LSBUSER LSBDBPASSWD LSBDB LSBDBHOST);
+
+sub usage()
+{
+print STDERR "mkcmdlist -v <lsbversion>\n";
+die;
+}
+
+GetOptions("v=s" => \$lsbversion);
+if( !$lsbversion ) { usage(); }
+
+# Uncomment to trace SQL statments
+#$trace=1;
+
+#
+# 2) Establish connection to the database
+#
+
+my $dbh = DBI->connect('DBI:mysql:database='.$LSBDB.';host='.$LSBDBHOST, $LSBUSER, $LSBDBPASSWD) 
+    or die "Couldn't connect to database: ".$DBI->db_errstr;
+
+#
+# 3) Get the list of cmds
+#
+
+$select = "SELECT DISTINCT Cid,Cname,Cpath FROM Command ";
+$select.= "LEFT JOIN SModCmd ON SMCcid=Cid ";
+$select.= "LEFT JOIN SubModule on SMid=SMCsmid ";
+$select.= "WHERE (SMCappearedin <= '$lsbversion' and SMCappearedin<>'') ";
+$select.= "AND (SMCwithdrawnin IS NULL OR SMCwithdrawnin > '$lsbversion') ";
+$select.= "AND (SMmandatorysince <= '$lsbversion' and SMmandatorysince<>'') ";
+$select.= "AND Cbuiltin!='Yes' ";
+$select.= "ORDER BY Cname ";
+
+#print $select;
+
+my $sth = $dbh->prepare($select) 
+    or die "Couldn't prepare $select query: ".DBI->errstr;
+$sth->execute or die "Couldn't execute $select query: ".DBI->errstr;
+
+for(1..$sth->rows) {
+        my $entry = $sth->fetchrow_hashref 
+            or die "Fetchrow failed on $select query: ".DBI->errstr;
+	$cmdname=$entry->{'Cname'};
+        #if ($entry->{'Cpath'} eq "") {
+        #    $cmdpath='None';
+        #} else {
+        #    $cmdpath=$entry->{'Cpath'};
+        #}
+	print "$cmdname\n";
+}
+
+$sth->finish;
+$dbh->disconnect;

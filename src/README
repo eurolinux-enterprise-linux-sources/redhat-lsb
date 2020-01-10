@@ -1,0 +1,14 @@
+Environment Variables
+===============================
+LSBDBHOST = <The name of the host which hosts the [[MySQL]] database server>
+LSBDB = <The name of the LSB [[MySQL]] database>
+LSBUSER = <The name of the mysql user with access to modify the LSB [[MySQL]] database>
+LSBDBPASSWD = <The password of the mysql user who has access to the LSB [[MySQL]] database>
+
+export LSBDBHOST=localhost
+export LSBDB=lsb
+export LSBUSER=lsbadmin
+export LSBDBPASSWD=PASSWORD
+
+
+WARNING: Most Scripts/Tools WILL NOT work if these variables are NOT set

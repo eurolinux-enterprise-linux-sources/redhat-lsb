@@ -1,0 +1,65 @@
+#!/usr/bin/perl
+
+# Source originally from lsb-cmdchk
+# Creating a list of desktop (graphics) libraries required by LSB
+#
+# changes from 3.1 version: LSB database is now version-aware
+#                           DBI is used instead of deprecated Mysql.pm
+
+use DBI;
+use Getopt::Long;
+use Env qw(LSBUSER LSBDBPASSWD LSBDB LSBDBHOST);
+
+sub usage()
+{
+print STDERR "mkgraphiclist -v <lsbversion> <arch>\n";
+print STDERR "          <arch> selects specific or All\n";
+die;
+}
+
+GetOptions("v=s" => \$lsbversion);
+if( !$lsbversion ) { usage(); }
+
+# Uncomment to trace SQL statments
+#$trace=1;
+
+#
+# 2) Establish connection to the database
+#
+
+my $dbh = DBI->connect('DBI:mysql:database='.$LSBDB.';host='.$LSBDBHOST, $LSBUSER, $LSBDBPASSWD) 
+    or die "Couldn't connect to database: ".$DBI->db_errstr;
+
+#
+# 3) Get the list of libraries for LSB_Graphics
+#
+
+$select = "SELECT DISTINCT ALrunname,Lname from Library ";
+$select.= "LEFT JOIN ModLib ON MLlid=Lid ";
+$select.= "LEFT JOIN SubModule ON SMid=MLmid ";
+$select.= "LEFT JOIN ModSMod ON MSMsmid=SMid ";
+$select.= "LEFT JOIN Module on Mid=MSMmid ";
+$select.= "LEFT JOIN ArchLib ON ALlid=Lid ";
+$select.= "LEFT JOIN Architecture ON ALaid=Aid ";
+$select.= "WHERE ( (ALappearedin <= '$lsbversion' and ALappearedin<>'') ";
+$select.= "AND (ALwithdrawnin IS NULL OR ALwithdrawnin > '$lsbversion') ) ";
+$select.= "AND Aname='".$ARGV[0]."' ";
+$select.= "AND ALrunname!='' ";
+$select.= "AND Mname IN ('LSB-Desktop') ";
+$select.= "ORDER BY ALrunname ";
+
+#print $select;
+
+my $sth = $dbh->prepare($select) 
+    or die "Couldn't prepare $select query: ".DBI->errstr;
+$sth->execute or die "Couldn't execute $select query: ".DBI->errstr;
+
+for(1..$sth->rows) {
+        my $entry = $sth->fetchrow_hashref 
+            or die "Fetchrow failed on $select query: ".DBI->errstr;
+	$graphicsname=$entry->{'ALrunname'};
+	print "$graphicsname\n";
+}
+
+$sth->finish;
+$dbh->disconnect;
