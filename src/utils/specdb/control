@@ -1,0 +1,8 @@
+#mysql settings
+lsbdbhost=localhost
+lsbdbport=3306
+lsbdbuser=lsbadmin
+lsbdbpassword=redhat-lsb
+lsbdb=lsb
+mysql_cmd="mysql --host ${lsbdbhost} --port ${lsbdbport} --user ${lsbdbuser} \
+-D ${lsbdb} --password=${lsbdbpassword} --batch -N -e"

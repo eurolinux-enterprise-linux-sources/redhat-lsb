@@ -1,0 +1,62 @@
+#!/bin/bash
+
+cd $(dirname $0)
+
+. control
+
+function usage {
+    cat <<EOF >&2
+USAGE
+     $(basename $0) -h
+     $(basename $0) --help
+     $(basename $0) arch submod lsbver
+EOF
+}
+if [ $# -eq 0 -o $# -eq 2 ];then
+    usage
+    exit 1
+elif [ $# -eq 1 ];then
+    if [ $1 = '-h' -o $1 = '--help' ];then
+	usage
+	exit 1
+    else
+	echo "$1: wrong option" >&2
+	exit 1
+    fi
+elif [ $# -eq 3 ];then
+    arch=$1
+    submod=$2
+    lsbver=$3
+    select_st='
+select Lname, ALrunname
+from Library
+left join SModLib on Lid = SMLlid
+left join ArchLib on Lid = ALlid
+left join SubModule on SMLsmid = SMid
+left join Architecture on ALaid = Aid
+where 1 = 1
+'
+    where_st="
+and ( strcmp (Aname, '$arch') = 0 )
+and ( strcmp (SMname, '$submod') = 0 ) 
+and (  Lcandidatefor is NULL
+    or Lcandidatefor <= $lsbver 
+    or strcmp ( Lcandidatefor, 'Unknown' ) != 0 )
+and (   ALappearedin is not NULL
+    and strcmp ( ALappearedin, ''  ) != 0 
+    and ALappearedin <= $lsbver )
+and (  ALwithdrawnin is NULL
+    or ALwithdrawnin > $lsbver )
+and (   SMLappearedin is not NULL
+    and strcmp ( SMLappearedin, ''  ) != 0
+    and SMLappearedin <= $lsbver )
+and (  SMLwithdrawnin is NULL
+    or  SMLwithdrawnin > $lsbver )
+"
+    ${mysql_cmd} "$select_st $where_st"
+    exit 0
+else
+    echo 'too many options' >&2
+    usage
+    exit 1
+fi

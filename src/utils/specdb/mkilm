@@ -1,0 +1,48 @@
+#!/bin/bash
+#Interpreted Language Module
+
+cd $(dirname $0)
+
+. control
+
+function usage {
+    cat <<EOF >&2
+USAGE
+     $(basename $0) -h
+     $(basename $0) --help
+     $(basename $0) interpretedlang lsbver
+EOF
+}
+
+if [ $# -ge 3 ];then
+    echo 'error: too many options' >&2 
+    usage
+    exit 1
+elif [ "$1" = '-h' -o "$1" = '--help' -o $# -eq 0 ];then
+    usage
+    exit 1
+fi
+interpretedlang=$1
+lsbver=$2
+
+select_stm='select ILMname, ILMversion
+from InterpretedLanguageModule
+left join InterpretedLanguage on ILMlanguage = ILid
+'
+
+where_stm="
+where 
+strcmp ( ILname, '${interpretedlang}' ) = 0
+and (   ILMappearedin is not NULL
+    and strcmp ( ILMappearedin, '' ) != 0
+    and ILMappearedin <= ${lsbver} )
+and (  ILMwithdrawnin is NULL
+    or ILMwithdrawnin > ${lsbver} )
+and (   ILappearedin is not NULL
+    and strcmp ( ILappearedin, '' )
+    and ILappearedin <= ${lsbver} )
+and (  ILwithdrawnin is NULL
+    or ILwithdrawnin > ${lsbver} )
+"
+#echo "${select_stm} ${where_stm}"
+${mysql_cmd} "${select_stm} ${where_stm}"

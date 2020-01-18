@@ -1,0 +1,22 @@
+#!/bin/bash
+
+cd $(dirname $0)
+
+. control
+
+function usage {
+    cat <<EOF >&2
+USAGE
+     $(basename $0)
+EOF
+}
+if [ $# -eq 0 ];then
+    lsbdb='
+select Aname from Architecture order by Aname
+'
+    ${mysql_cmd} "${lsbdb}"
+    exit 0
+else
+    usage
+    exit 1
+fi

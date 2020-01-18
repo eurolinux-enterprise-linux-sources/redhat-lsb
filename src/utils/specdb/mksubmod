@@ -1,0 +1,56 @@
+#!/bin/bash
+
+cd $(dirname $0)
+. control
+
+function usage {
+cat <<EOF >&2
+USAGE:
+    $(basename $0) -h
+    $(basename $0) --help
+    $(basename $0)
+    $(basename $0) mod lsbver  
+EOF
+    exit 1
+}
+
+if [ $# -eq 0 ];then
+    select_st='select SMname from SubModule'
+    { ${mysql_cmd} "${select_st}";echo "LSB_Others"; } | sort
+    exit 0
+elif [ $# -eq 1 ];then
+    if [ "$1" = '--help' -o "$1" = '-h' ];then
+	usage
+    else
+	echo "$1: wrong option" 1>&2
+	exit 1
+    fi
+elif [ $# -eq 2 ];then
+    mod=$1
+    lsbver=$2
+    select_st='
+select SMname
+from SubModule
+left join ModSMod on SMid = MSMsmid
+left join Module on MSMmid = Mid
+where 1 = 1
+'
+    where_st="
+and ( strcmp (Mname, '$mod') = 0 )
+and (    SMmandatorysince is not NULL
+     and strcmp ( SMmandatorysince, '' ) != 0
+     and SMmandatorysince <= $lsbver )
+and ( SMdeprecatedsince is NULL or SMdeprecatedsince > $lsbver )
+and ( MSMappearedin is not NULL
+and   strcmp ( MSMappearedin, '' ) != 0
+and   MSMappearedin <= $lsbver )
+and ( MSMwithdrawnin is NULL or MSMwithdrawnin > $lsbver )"
+
+#echo "${select_st} ${where_st}"
+${mysql_cmd} "${select_st} ${where_st}"
+    exit 0
+else
+    echo "wrong: too many options" >&2
+    usage
+    exit 1
+fi

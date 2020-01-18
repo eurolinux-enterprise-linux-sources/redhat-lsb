@@ -1,0 +1,52 @@
+#!/bin/bash
+
+cd $(dirname $0)
+
+. control
+
+function usage {
+    cat <<EOF >&2
+USAGE
+     $(basename $0) lsbver
+     $(basename $0) -h
+     $(basename $0) --help
+EOF
+}
+
+if [ $# -eq 0 ];then
+    usage
+    exit 1
+elif [ $# -eq 1 ];then
+    if [ "$1" = "-h" -o "$1" = "--help" ];then
+	usage
+	exit 1
+    fi
+    lsbver=$1
+    select_st='
+select Hname from
+(
+select Hname, Hcandidatefor,
+Happearedin, Hwithdrawnin
+from Header
+) as header
+where 1 = 1
+'
+where_st="
+and (  Hcandidatefor is NULL
+    or Hcandidatefor <= $lsbver 
+    or strcmp ( Hcandidatefor, 'Unknown' ) != 0 )
+and (   Happearedin is not NULL
+    and strcmp ( Happearedin, '' )
+    and Happearedin <= $lsbver )
+and (  Hwithdrawnin is NULL
+    or Hwithdrawnin > $lsbver )
+order by Hname
+"
+
+${mysql_cmd} "${select_st} ${where_st}"
+    exit 0
+else
+    echo 'error: too many options' >&2
+    usage
+    exit 1
+fi

@@ -1,0 +1,33 @@
+#!/bin/bash
+#Interpreted Language
+
+cd $(dirname $0)
+
+. control
+
+function usage {
+    cat <<EOF >&2
+USAGE
+     $(basename $0) -h
+     $(basename $0) --help
+     $(basename $0) lsbver
+EOF
+}
+
+if [ $# -eq 0 -o $# -gt 1 -o "$1" = '-h' -o "$1" = '--help' ];then
+    usage
+    exit 1
+fi 
+
+lsbver=$1
+select_stm='
+select ILname from InterpretedLanguage
+'
+where_stm="
+where (   ILappearedin is not NULL
+      and strcmp ( ILappearedin, '' ) != 0
+      and ILappearedin <= ${lsbver} )
+and (  ILwithdrawnin is NULL
+    or ILwithdrawnin > ${lsbver} )
+"
+${mysql_cmd} "${select_stm} ${where_stm}"

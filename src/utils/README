@@ -1,0 +1,43 @@
+* Two Databases
+** LSB db
+   o Mysql database
+   o How to create LSB db? pls reference:
+     https://wiki.linuxfoundation.org/en/SpecDatabaseUsage
+   o Table names and table schemata, pls reference:
+     https://wiki.linuxfoundation.org/en/SpecDatabaseSchema
+     https://wiki.linuxfoundation.org/en/LSB_Elements_Schema
+   o we can query LSB db to get commands and libraries of a submodule
+
+** db from yum repo
+   o SQLite database, command sqlite3 works well
+   o we need package.sqlite and filelists.sqlite. You can download
+     them from one of Fedora mirror servers. Pls reference:
+     http://mirrors.fedoraproject.org/publiclist/
+   o from filelists.sqlite, we can get package id by a command name
+     or library .so name
+   o we can get package name, version, group, provides, etc. from
+     primary.sqlite by package id.
+
+** put the two database together
+   we get a command name or library .so name, then we ask
+   filelists.sqlite and primary.sqlite to get the package
+   name.
+
+* Two Tools
+  o Tools in 'specdb' directory work with LSB database.
+    These tools source config file 'specdb/control'
+  o Tools in 'repodb' directory work with repo database
+  o Pls reference '-h' or '--help' option of commands
+  o repodb tools output results on stdout in one line if
+    find a match package, others output the command or library
+    name to stderr. So, it's easy to process the command
+    output. 
+  o repodb tools always output more packages, you need manually
+    remove the unwanted one.
+
+* Why Not Generate Dependencies automatically?
+  o LSB has more and more submodules
+  o we need support more than one architectures
+  o generating dependencies automatically, make spec file full of 'ifarch',
+    and we will get a long and complicated spec file.
+  o generating dependencies manually is not difficult 

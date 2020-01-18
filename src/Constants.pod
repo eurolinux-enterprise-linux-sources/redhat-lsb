@@ -1,0 +1,27 @@
+=pod
+
+=head1 NAME
+
+Locale::Constants - constants for Locale codes
+
+=head1 DESCRIPTION
+
+B<Locale::Constants> is an alias of B<Locale::Codes::Constants>.
+B<Locale::Constants> has been replaced by B<Locale::Codes::Constants>.
+The module is supplied just because LSB requires it. Pls
+B<do not> use B<Locale::Constants> in new software.
+For more detail of B<Locale::Constants>, pls reference B<Locale::Codes::Constants>.
+
+=head1 AUTHOR
+
+This B<Locale::Constants> is created and maintained by Xibo Ning (xning@redhat.com)
+
+=head1 COPYRIGHT
+
+Just the same as Locale::Codes, or GPL+
+
+This module is free software; you can redistribute it and/or
+modify it under the same terms as Perl itself.
+
+=cut
+

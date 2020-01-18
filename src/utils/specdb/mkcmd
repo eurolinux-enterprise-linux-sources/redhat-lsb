@@ -1,0 +1,87 @@
+#!/bin/bash
+
+cd $(dirname $0)
+. control
+function usage {
+    cat <<EOF >&2
+USAGE
+     $(basename $0) -h
+     $(basename $0) --help
+     $(basename $0) submod lsbver
+EOF
+}
+
+if [ $# -eq 0 -o $# -eq 1 ];then
+    usage
+    exit 1
+elif [ $# -eq 2 ];then
+    submod=$1
+    lsbver=$2
+    select_st='
+select cmd from
+(
+(
+select SMname, Cname as cmd, Ccandidatefor,
+Cdeprecatedsince, SMCappearedin, SMCwithdrawnin
+from Command
+left join SModCmd on Cid = SMCcid
+left join SubModule on SMCsmid = SMid
+where SMname is not NULL
+and Cpath is NULL
+and ( Cbuiltin is NULL or strcmp (Cbuiltin, "No") = 0 )
+)
+union
+(
+select "LSB_Others" as SMname, Cname as cmd, Ccandidatefor,
+Cdeprecatedsince, SMCappearedin, SMCwithdrawnin
+from Command
+left join SModCmd on Cid = SMCcid
+left join SubModule on SMCsmid = SMid
+where SMname is NULL
+and Cpath is NULL
+and ( Cbuiltin is NULL or strcmp (Cbuiltin, "No") = 0 )
+)
+union
+(
+select SMname, Cpath as cmd, Ccandidatefor,
+Cdeprecatedsince, SMCappearedin, SMCwithdrawnin
+from Command
+left join SModCmd on Cid = SMCcid
+left join SubModule on SMCsmid = SMid
+where SMname is not NULL
+and Cpath is not NULL
+and ( Cbuiltin is NULL or strcmp (Cbuiltin, "No") = 0 )
+)
+union
+(
+select "LSB_Others" as SMname, Cpath as cmd, Ccandidatefor,
+Cdeprecatedsince, SMCappearedin, SMCwithdrawnin
+from Command
+left join SModCmd on Cid = SMCcid
+left join SubModule on SMCsmid = SMid
+where SMname is NULL
+and Cpath is not NULL
+and ( Cbuiltin is NULL or strcmp (Cbuiltin, "No") = 0 )
+)
+) as ModCmd
+where 1 = 1
+'
+    where_st="
+and ( strcmp (SMname, '${submod}' ) = 0 )
+and (  Ccandidatefor is NULL
+    or Ccandidatefor <= $lsbver 
+    or strcmp ( Ccandidatefor, 'Unknown' ) != 0 )
+and (   SMCappearedin is not NULL
+    and strcmp ( SMCappearedin, '' ) != 0 
+    and SMCappearedin <= $lsbver )
+and (  SMCwithdrawnin is NULL
+    or  SMCwithdrawnin > $lsbver )
+order by SMname,cmd
+"
+    ${mysql_cmd} "${select_st} ${where_st}"
+    exit 0
+else
+    echo 'too many options' >&2
+    usage
+    exit 1
+fi

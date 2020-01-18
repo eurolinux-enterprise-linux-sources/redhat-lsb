@@ -1,0 +1,166 @@
+#!/bin/sh
+# 
+# mkredhat-lsb: generate redhat-lsb.spec from redhat-lsb.spec.in
+#               by grokking through the LSB spec
+#
+# Matt Wilson <msw@redhat.com>
+#
+# Modified Wed, 5 July Lawrence Lim <llim@redhat.com>
+# Generate redhat-lsb.spec via going through lsbspecdb
+#
+# Copyright 2002, 2003 Red Hat, Inc.
+#
+# This software may be freely redistributed under the terms of the GNU
+# library public license.
+#
+# You should have received a copy of the GNU Library Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+LSB_ROOT=$1
+LIBSPATH="/lib /usr/lib /usr/X11R6/lib"
+export PATH="$PATH:/usr/lib/lsb/"
+
+#checkFile $LSB_ROOT/lsbversion
+#LSB_VERSION=$(cat $LSB_ROOT/lsbversion)
+LSB_VERSION=4.0
+
+#
+# archLSB IA32 Libraries
+#
+# XXX spec is broken, add pthread.sgml to baselib.m4
+#ARCHLSB_IA32_BASELIB=`extractArch IA32`
+
+## exclude ld-lsb{arch}.so as it has been hard-coded
+EXCLUDED_LD_LSB="(ld-lsb)"
+
+ARCHLSB_IA32_BASELIB="# archLSB IA32 Base Libraries"
+IA32_BASELIB=`./mkbaselist2 -v $LSB_VERSION IA32 | egrep -v $EXCLUDED_LD_LSB`
+# Add the Requires: to each.
+for BASELIB in $IA32_BASELIB; do
+    ARCHLSB_IA32_BASELIB=`echo -e "$ARCHLSB_IA32_BASELIB"'\\\\\\n'"Requires: $BASELIB"`
+done
+
+ARCHLSB_IA64_BASELIB="# archLSB IA64 Base Libraries"
+IA64_BASELIB=`./mkbaselist2 -v $LSB_VERSION IA64 | egrep -v $EXCLUDED_LD_LSB`
+# Add the Requires: to each.
+for BASELIB in $IA64_BASELIB; do
+    ARCHLSB_IA64_BASELIB=`echo -e "$ARCHLSB_IA64_BASELIB"'\\\\\\n'"Requires: $BASELIB()(64bit)"`
+done
+
+ARCHLSB_PPC32_BASELIB="# archLSB PPC32 Base Libraries"
+PPC32_BASELIB=`./mkbaselist2 -v $LSB_VERSION PPC32 | egrep -v $EXCLUDED_LD_LSB`
+# Add the Requires: to each.
+for BASELIB in $PPC32_BASELIB; do
+    ARCHLSB_PPC32_BASELIB=`echo -e "$ARCHLSB_PPC32_BASELIB"'\\\\\\n'"Requires: $BASELIB"`
+done
+
+ARCHLSB_PPC64_BASELIB="# archLSB PPC64 Base Libraries"
+PPC64_BASELIB=`./mkbaselist2 -v $LSB_VERSION PPC64 | egrep -v $EXCLUDED_LD_LSB`
+# Add the Requires: to each.
+for BASELIB in $PPC64_BASELIB; do
+    ARCHLSB_PPC64_BASELIB=`echo -e "$ARCHLSB_PPC64_BASELIB"'\\\\\\n'"Requires: $BASELIB()(64bit)"`
+done
+
+ARCHLSB_S390_BASELIB="# archLSB S390 Base Libraries"
+S390_BASELIB=`./mkbaselist2 -v $LSB_VERSION S390 | egrep -v $EXCLUDED_LD_LSB`
+# Add the Requires: to each.
+for BASELIB in $S390_BASELIB; do
+    ARCHLSB_S390_BASELIB=`echo -e "$ARCHLSB_S390_BASELIB"'\\\\\\n'"Requires: $BASELIB"`
+done
+
+ARCHLSB_S390X_BASELIB="# archLSB S390X Base Libraries"
+S390X_BASELIB=`./mkbaselist2 -v $LSB_VERSION S390X | egrep -v $EXCLUDED_LD_LSB`
+# Add the Requires: to each.
+for BASELIB in $S390X_BASELIB; do
+    ARCHLSB_S390X_BASELIB=`echo -e "$ARCHLSB_S390X_BASELIB"'\\\\\\n'"Requires: $BASELIB()(64bit)"`
+done
+
+ARCHLSB_AMD64_BASELIB="# archLSB AMD64 Base Libraries"
+AMD64_BASELIB=`./mkbaselist2 -v $LSB_VERSION x86-64 | egrep -v $EXCLUDED_LD_LSB`
+# Add the Requires: to each.
+for BASELIB in $AMD64_BASELIB; do
+    ARCHLSB_AMD64_BASELIB=`echo -e "$ARCHLSB_AMD64_BASELIB"'\\\\\\n'"Requires: $BASELIB()(64bit)"`
+done
+
+#
+# gLSB Base/Utility/Stdc++ Libraries for ALL arch
+#
+# TODO: as of LSB 3.1, the result that came back from sgml sniffing is ok
+# however, need to change it to extract from DB directly later
+
+GLSB_BASELIB="# gLSB Base/Utility/Stdc++/Graphics Libraries"
+ALL_BASELIB=`./mkbaselist2 -v $LSB_VERSION All | egrep -v $EXCLUDED_LD_LSB`
+# Add the Requires: to each.
+for BASELIB in $ALL_BASELIB; do
+    GLSB_BASELIB=`echo -e "$GLSB_BASELIB"'\\\\\\n'"Requires: $BASELIB%{qual}"`
+done
+
+#GLSB_BASELIB=`extractLibraries $LSB_ROOT/LSB/generic/baselib/baselib.sgml \
+#              "# gLSB Base Libraries" %{qual}`
+
+#
+# gLSB Utility Libraries
+#
+# TODO: as of LSB 3.1, the result that came back from sgml sniffing is ok
+# however, need to change it to extract from DB directly later
+#GLSB_UTILLIB=`extractLibraries $LSB_ROOT/LSB/generic/utillib/utillib.sgml \
+#              "# gLSB Utility Libraries" %{qual}`
+
+#
+# gLSB Graphics Libraries
+#
+#GLSB_GRAPHLIB="# gLSB Graphics Libraries"
+#GRAPHICS=`./mkgraphiclist2`
+
+# Add the Requires: to each.
+#for GRAPHICLIB in $GRAPHICS; do
+    # aah, shell escaping
+#    GLSB_GRAPHLIB=`echo -e "$GLSB_GRAPHLIB"'\\\\\\n'"Requires: $GRAPHICLIB"%{qual}`
+#done
+
+#
+# gLSB Command and Utilities
+#
+#checkFile $LSB_ROOT/LSB/generic/command/command.sgml
+
+# our foo-lsb package provides this program.
+EXCLUDED_COMMANDS_REGEX="(lsb_release)"
+
+GLSB_COMMAND_UTILITIES="# gLSB Command and Utilities"
+#COMMANDS=`grep '<ENTRY>' $LSB_ROOT/LSB/generic/command/command.sgml | cut -b8- | 
+COMMANDS=`./mkcmdlist2 -v $LSB_VERSION |
+          egrep -v $EXCLUDED_COMMANDS_REGEX`
+
+#Check to make sure each required command exists
+for COMMAND in $COMMANDS; do
+    if ! which $COMMAND > /dev/null 2> /dev/null; then
+	echo "ERROR: Path to required command $COMMAND not found" 1>&2
+	exit 1
+    fi
+done
+
+# note the path and sort them
+CMDPATHS=`for COMMAND in $COMMANDS; do which $COMMAND; done | sort`
+
+# Add the Requires: to each.
+for CMDPATH in $CMDPATHS; do
+    # aah, shell escaping
+    GLSB_COMMAND_UTILITIES=`echo -e "$GLSB_COMMAND_UTILITIES"'\\\\\\n'"Requires: $CMDPATH"`
+done
+
+#
+# Autogenerate spec file
+#
+
+sed -e "s,@GLSB_COMMAND_UTILITIES@,$GLSB_COMMAND_UTILITIES," \
+    -e "s,@ARCHLSB_IA32_BASELIB@,$ARCHLSB_IA32_BASELIB," \
+    -e "s,@ARCHLSB_IA64_BASELIB@,$ARCHLSB_IA64_BASELIB," \
+    -e "s,@ARCHLSB_PPC32_BASELIB@,$ARCHLSB_PPC32_BASELIB," \
+    -e "s,@ARCHLSB_PPC64_BASELIB@,$ARCHLSB_PPC64_BASELIB," \
+    -e "s,@ARCHLSB_S390_BASELIB@,$ARCHLSB_S390_BASELIB," \
+    -e "s,@ARCHLSB_S390X_BASELIB@,$ARCHLSB_S390X_BASELIB," \
+    -e "s,@ARCHLSB_AMD64_BASELIB@,$ARCHLSB_AMD64_BASELIB," \
+    -e "s,@GLSB_BASELIB@,$GLSB_BASELIB," \
+    -e "s,@LSB_VERSION@,$LSB_VERSION," \
+        redhat-lsb.spec.in > redhat-lsb.spec
